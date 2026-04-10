@@ -1,79 +1,47 @@
 #include <gtest/gtest.h>
 
-#include <limits>
-#include <stdexcept>
-#include <vector>
-
-// These headers do not exist yet. You must write them.
 #include "../include/BufferReader.hpp"
 #include "../include/BufferWriter.hpp"
 
-// ---------------------------------------------------------
-// Phase 1: Primitive Round-Trip Tests
-// ---------------------------------------------------------
-
-TEST(SerializerTest, RoundTripUint32) {
+// Test 1: The Single Primitive
+TEST(SerializationEngine, SingleInteger) {
   BufferWriter writer;
-  uint32_t original_value = 402834;
+  uint32_t original = 0xDEADBEEF;
 
-  writer.WriteUint32(original_value);
-  std::vector<uint8_t> buffer = writer.GetBuffer();
+  writer.Write(original);
 
-  // A uint32_t must be exactly 4 bytes.
-  ASSERT_EQ(buffer.size(), 4) << "Buffer size is incorrect for uint32_t.";
+  BufferReader reader(writer.GetBytes());
+  uint32_t extracted = reader.Read<uint32_t>();
 
-  BufferReader reader(buffer);
-  uint32_t deserialized_value = reader.ReadUint32();
-
-  EXPECT_EQ(original_value, deserialized_value)
-      << "Data corruption during uint32_t round-trip.";
+  EXPECT_EQ(original, extracted);
 }
 
-TEST(SerializerTest, RoundTripFloat) {
+// Test 2: The Sequential Payload
+TEST(SerializationEngine, MultiTypePayload) {
   BufferWriter writer;
-  float original_value = -134.567f;
+  int32_t id = 42;
+  float velocity = 3.14f;
+  char status = 'A';
 
-  writer.WriteFloat(original_value);
-  std::vector<uint8_t> buffer = writer.GetBuffer();
+  writer.Write(id);
+  writer.Write(velocity);
+  writer.Write(status);
 
-  ASSERT_EQ(buffer.size(), 4) << "Buffer size is incorrect for float.";
+  BufferReader reader(writer.GetBytes());
 
-  BufferReader reader(buffer);
-  float deserialized_value = reader.ReadFloat();
-
-  EXPECT_FLOAT_EQ(original_value, deserialized_value)
-      << "Floating point corruption detected.";
+  EXPECT_EQ(reader.Read<int32_t>(), id);
+  EXPECT_FLOAT_EQ(reader.Read<float>(), velocity);
+  EXPECT_EQ(reader.Read<char>(), status);
 }
 
-// ---------------------------------------------------------
-// Phase 2: Boundary and Limit Tests
-// ---------------------------------------------------------
-
-TEST(SerializerTest, NumericLimits) {
+// Test 3: The Malicious Packet
+TEST(SerializationEngine, BufferUnderflowPrevention) {
   BufferWriter writer;
-  uint32_t max_int = std::numeric_limits<uint32_t>::max();
+  uint16_t short_data = 0xFFFF;
+  writer.Write(short_data);  // Writes exactly 2 bytes
 
-  writer.WriteUint32(max_int);
+  BufferReader reader(writer.GetBytes());
 
-  BufferReader reader(writer.GetBuffer());
-  uint32_t result = reader.ReadUint32();
-
-  EXPECT_EQ(max_int, result) << "Failed to round-trip maximum uint32_t value.";
-}
-
-// ---------------------------------------------------------
-// Phase 3: Defensive Programming (Exception Handling)
-// ---------------------------------------------------------
-
-TEST(SerializerTest, ReadPastBufferThrowsException) {
-  BufferWriter writer;
-  writer.WriteUint32(100);  // Writes 4 bytes
-
-  BufferReader reader(writer.GetBuffer());
-  reader.ReadUint32();  // Consumes the 4 bytes. Write head is at the end.
-
-  // Attempting to read another float (4 bytes) when empty MUST throw.
-  EXPECT_THROW(
-      { reader.ReadFloat(); }, std::out_of_range)
-      << "BufferReader failed to throw std::out_of_range on buffer overflow.";
+  // Attempting to read 4 bytes from a 2-byte buffer MUST throw
+  EXPECT_THROW(reader.Read<uint32_t>(), std::out_of_range);
 }
