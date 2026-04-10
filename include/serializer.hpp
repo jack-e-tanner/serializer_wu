@@ -91,14 +91,13 @@ class Serializer {
 #endif
 
 /* THINGS TO ADD
-Size getter — size_t size() const to expose buffer length
 Operator overloading — overload << so you can do std::cout <<
-serializer to print the bytes Multiple fields — serialize more than one object
-into the same buffer (append instead of overwrite) Inheritance — base
-Serializer class, derived FileSerializer that writes/reads bytes to/from a
-file Rule of Five — custom destructor, copy constructor, copy assignment, move
-constructor, move assignment static method — a factory like
-Serializer::fromBytes(std::vector<uint8_t>) that constructs a Serializer from
-existing data friend functions — give the << overload access to private
-members Pick whichever one interests you and start writing. I'll review it.
+serializer to print the bytes
+Multiple fields — serialize more than one object into the same buffer (append
+instead of overwrite) Inheritance — base Serializer class, derived
+FileSerializer that writes/reads bytes to/from a file Rule of Five — custom
+destructor, copy constructor, copy assignment, move constructor, move assignment
+static method — a factory like Serializer::fromBytes(std::vector<uint8_t>) that
+constructs a Serializer from existing data friend functions — give the <<
+overload access to private members
 */
